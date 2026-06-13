@@ -8,8 +8,11 @@ import java.util.*;
  * OOP Concepts used in this file:
  *  - ENCAPSULATION  : private fields + getters in Resident, WaitlistEntry, QueueRecord
  *  - ABSTRACTION    : QueueStrategy interface hides HOW the next resident is chosen
- *  - POLYMORPHISM   : NormalQueueStrategy & PriorityQueueStrategy implement
- *                      QueueStrategy differently, but are used the SAME way
+ *  - POLYMORPHISM   : QueueStrategy is implemented by NormalQueueStrategy. The
+ *                      WaitlistManager calls strategy.getNext(...) without caring
+ *                      which concrete implementation is plugged in, so additional
+ *                      strategies could be added later without changing
+ *                      WaitlistManager itself.
  *  - COMPOSITION    : WaitlistManager "has" a List<WaitlistEntry>, a QueueStrategy,
  *                      and a QueueHistory object
  *
@@ -19,8 +22,7 @@ import java.util.*;
  *   Booking SUCCESS (slot available)
  *        -> handled entirely by the Booking & Reservation module.
  *           This Waitlist module is NOT involved. A confirmed
- *           booking can never be displaced by anyone, priority
- *           or not.
+ *           booking can never be displaced by anyone.
  *
  *   Booking FAILS (slot already full)
  *        -> resident calls WaitlistManager.joinQueue(resident, stationId)
@@ -33,8 +35,13 @@ import java.util.*;
  *           turned into a NEW confirmed booking by the Booking
  *           module.
  *
- *   In short: Priority affects WHO MOVES UP THE WAITLIST FIRST,
- *   never WHO KEEPS / LOSES AN EXISTING RESERVATION.
+ *   NOTE: The Priority Queue feature has been removed. Since this
+ *   is a PRE-BOOKING system (residents plan ahead and join the
+ *   waitlist expecting a roughly predictable position/wait time),
+ *   allowing a later-joining "priority" member to jump ahead of
+ *   residents who already joined the waitlist would disrupt their
+ *   plans. All waitlist promotions are now strictly First-Come,
+ *   First-Served (FIFO) via NormalQueueStrategy.
  * ============================================================ */
 
 
@@ -46,12 +53,10 @@ import java.util.*;
 class Resident {
     private String residentId;
     private String name;
-    private boolean priorityMember; // true = priority queue member
 
-    public Resident(String residentId, String name, boolean priorityMember) {
+    public Resident(String residentId, String name) {
         this.residentId = residentId;
         this.name = name;
-        this.priorityMember = priorityMember;
     }
 
     public String getResidentId() {
@@ -62,13 +67,9 @@ class Resident {
         return name;
     }
 
-    public boolean isPriorityMember() {
-        return priorityMember;
-    }
-
     @Override
     public String toString() {
-        return name + " (ID: " + residentId + (priorityMember ? ", PRIORITY" : "") + ")";
+        return name + " (ID: " + residentId + ")";
     }
 }
 
@@ -126,8 +127,9 @@ interface QueueStrategy {
 
 
 /* ----------------------------------------------------------
- * 4. NormalQueueStrategy (POLYMORPHISM - implementation #1)
+ * 4. NormalQueueStrategy (POLYMORPHISM)
  *    Simple First-Come-First-Served (FIFO).
+ *    This is the ONLY queue strategy used by the system.
  * ---------------------------------------------------------- */
 class NormalQueueStrategy implements QueueStrategy {
 
@@ -159,68 +161,7 @@ class NormalQueueStrategy implements QueueStrategy {
 
 
 /* ----------------------------------------------------------
- * 5. PriorityQueueStrategy (POLYMORPHISM - implementation #2)
- *
- *    IMPORTANT DESIGN NOTE (read this!):
- *    --------------------------------------------------------
- *    Priority does NOT affect CONFIRMED bookings. A resident
- *    who already has a confirmed reservation (handled by the
- *    Booking & Reservation module) can NEVER be displaced or
- *    "skipped" by a priority member. That would take away
- *    something the resident already has, which is unfair.
- *
- *    Priority ONLY affects the ORDER OF THE WAITLIST -- i.e.
- *    when a slot becomes free (due to a cancellation), who
- *    gets the FIRST CHANCE to be promoted into that slot.
- *
- *    Since EVERYONE in the waitlist currently has nothing
- *    (no reservation yet), letting priority members go first
- *    does not take anything away from anyone -- it only
- *    decides who gets the next "opportunity" first. This is
- *    why a simple Priority -> FIFO ordering is fair here, and
- *    no aging/quota/anti-starvation mechanism is required.
- *    --------------------------------------------------------
- * ---------------------------------------------------------- */
-class PriorityQueueStrategy extends NormalQueueStrategy {
-
-    @Override
-    public WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId) {
-
-        WaitlistEntry priorityEntry = null;
-
-        for (WaitlistEntry e : queue) {
-
-            if (!e.getStationId().equals(stationId))
-                continue;
-
-            if (!e.getResident().isPriorityMember())
-                continue;
-
-            if (priorityEntry == null ||
-                e.getJoinTime().isBefore(priorityEntry.getJoinTime())) {
-
-                priorityEntry = e;
-            }
-        }
-
-        // Found priority member
-        if (priorityEntry != null) {
-            return priorityEntry;
-        }
-
-        // No priority member -> use FIFO logic
-        return super.getNext(queue, stationId);
-    }
-
-    @Override
-    public String getStrategyName() {
-        return "Priority-Based (Waitlist Only)";
-    }
-}
-
-
-/* ----------------------------------------------------------
- * 6. QueueRecord class
+ * 5. QueueRecord class
  *    Stores ONE completed queue record (for history).
  * ---------------------------------------------------------- */
 class QueueRecord {  //only created when someone was previously in the waitlist and later gets promoted
@@ -253,7 +194,7 @@ class QueueRecord {  //only created when someone was previously in the waitlist 
 
 
 /* ----------------------------------------------------------
- * 7. QueueHistory class
+ * 6. QueueHistory class
  *    Keeps track of each resident's queue statistics:
  *      - number of times joined
  *      - list of completed records
@@ -298,7 +239,7 @@ class QueueHistory {  //Map => dictionary (in Python)
 
 
 /* ----------------------------------------------------------
- * 8. WaitlistManager class
+ * 7. WaitlistManager class
  *    The "brain" of the module. Manages the live queue,
  *    applies the chosen strategy, and updates history.
  *
@@ -308,7 +249,7 @@ class QueueHistory {  //Map => dictionary (in Python)
 class WaitlistManager {
 
     private List<WaitlistEntry> queue = new ArrayList<>();
-    private QueueStrategy strategy;          // can be swapped at runtime (polymorphism)
+    private QueueStrategy strategy;          // currently always NormalQueueStrategy
     private QueueHistory history = new QueueHistory();
 
     // Assumption: each charging session takes about 30 minutes
@@ -316,12 +257,6 @@ class WaitlistManager {
 
     public WaitlistManager(QueueStrategy strategy) {
         this.strategy = strategy;
-    }
-
-    /** Change the queue ordering strategy at runtime. */
-    public void setStrategy(QueueStrategy strategy) {
-        this.strategy = strategy;
-        System.out.println("[INFO] Queue strategy switched to: " + strategy.getStrategyName());
     }
 
     /* ---------- Feature 1: Join Waiting Queue ---------- */
@@ -471,54 +406,50 @@ class WaitlistManager {
 
 
 /* ============================================================
- * 9. Main class - demonstrates all features
+ * 8. Main class - demonstrates all features
  * ============================================================ */
 public class SmartQueueManagement {
 
     public static void main(String[] args) {
 
         // Create some residents
-        Resident alice   = new Resident("R001", "Alice",   false);
-        Resident bob     = new Resident("R002", "Bob",     true);  // priority member
-        Resident charlie = new Resident("R003", "Charlie", false);
-        Resident diana   = new Resident("R004", "Diana",   true);  // priority member
+        Resident alice   = new Resident("R001", "Alice");
+        Resident bob     = new Resident("R002", "Bob");
+        Resident charlie = new Resident("R003", "Charlie");
+        Resident diana   = new Resident("R004", "Diana");
 
         String stationId = "FAST-01";
 
-        // Start with the Normal (FIFO) strategy
+        // Always use the Normal (FIFO) strategy
         WaitlistManager manager = new WaitlistManager(new NormalQueueStrategy());
 
-        System.out.println("===== STEP 1: Residents join the queue (Normal Strategy) =====");
+        System.out.println("===== STEP 1: Residents join the queue (FIFO order) =====");
         manager.joinQueue(alice, stationId);
         manager.joinQueue(charlie, stationId);
+        manager.joinQueue(bob, stationId);
+        manager.joinQueue(diana, stationId);
         manager.printCurrentQueue(stationId);
 
-        System.out.println("\n===== STEP 2: Switch to Priority Strategy =====");
-        manager.setStrategy(new PriorityQueueStrategy());
-        manager.joinQueue(bob, stationId);     // joins later, but is a priority member
-        manager.joinQueue(diana, stationId);   // joins later, also priority member
-        manager.printCurrentQueue(stationId);
-
-        System.out.println("\n===== STEP 3: View queue status =====");
+        System.out.println("\n===== STEP 2: View queue status =====");
         manager.viewQueueStatus(alice, stationId);
         manager.viewQueueStatus(bob, stationId);
 
-        System.out.println("\n===== STEP 4: A booking is cancelled -> automatic promotion =====");
-        manager.promoteNext(stationId);   // Bob (priority, earliest) should be promoted first
+        System.out.println("\n===== STEP 3: A booking is cancelled -> automatic promotion =====");
+        manager.promoteNext(stationId);   // Alice (earliest) is promoted first
         manager.printCurrentQueue(stationId);
 
-        System.out.println("\n===== STEP 5: Another cancellation -> next promotion =====");
-        manager.promoteNext(stationId);   // Diana (priority) should be promoted next
+        System.out.println("\n===== STEP 4: Another cancellation -> next promotion =====");
+        manager.promoteNext(stationId);   // Charlie (next earliest) is promoted next
         manager.printCurrentQueue(stationId);
 
-        System.out.println("\n===== STEP 6: Charlie leaves the queue voluntarily =====");
-        manager.leaveQueue(charlie, stationId);
+        System.out.println("\n===== STEP 5: Diana leaves the queue voluntarily =====");
+        manager.leaveQueue(diana, stationId);
         manager.printCurrentQueue(stationId);
 
-        System.out.println("\n===== STEP 7: View queue history =====");
-        manager.viewQueueHistory(bob);
-        manager.viewQueueHistory(diana);
+        System.out.println("\n===== STEP 6: View queue history =====");
         manager.viewQueueHistory(alice);
         manager.viewQueueHistory(charlie);
+        manager.viewQueueHistory(bob);
+        manager.viewQueueHistory(diana);
     }
 }
