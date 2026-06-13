@@ -1,7 +1,6 @@
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /* ============================================================
  * MEMBER 4 - SMART QUEUE & WAITLIST MANAGEMENT
@@ -224,10 +223,10 @@ class PriorityQueueStrategy extends NormalQueueStrategy {
  * 6. QueueRecord class
  *    Stores ONE completed queue record (for history).
  * ---------------------------------------------------------- */
-class QueueRecord {
+class QueueRecord {  //only created when someone was previously in the waitlist and later gets promoted
     private String stationId;
     private LocalDateTime joinTime;
-    private LocalDateTime promotedTime;
+    private LocalDateTime promotedTime;  //Moved from waiting queue → confirmed booking
 
     public QueueRecord(String stationId, LocalDateTime joinTime, LocalDateTime promotedTime) {
         this.stationId = stationId;
@@ -260,7 +259,7 @@ class QueueRecord {
  *      - list of completed records
  *      - average wait time
  * ---------------------------------------------------------- */
-class QueueHistory {
+class QueueHistory {  //Map => dictionary (in Python)
     private Map<String, Integer> joinCount = new HashMap<>();
     private Map<String, List<QueueRecord>> records = new HashMap<>();
 
@@ -269,7 +268,11 @@ class QueueHistory {
     }
 
     public void recordPromotion(String residentId, QueueRecord record) {
-        records.computeIfAbsent(residentId, k -> new ArrayList<>()).add(record);
+        if (!records.containsKey(residentId)) {
+            records.put(residentId,new ArrayList<>());
+        }
+
+        records.get(residentId).add(record);
     }
 
     public int getJoinCount(String residentId) {
@@ -331,20 +334,31 @@ class WaitlistManager {
 
     /* ---------- Feature 2: Leave Queue ---------- */
     public boolean leaveQueue(Resident resident, String stationId) {
-        Optional<WaitlistEntry> found = queue.stream()
-                .filter(e -> e.getResident().getResidentId().equals(resident.getResidentId())
-                        && e.getStationId().equals(stationId))
-                .findFirst();
 
-        if (found.isPresent()) {
-            queue.remove(found.get());
+        WaitlistEntry found = null;
+
+        for (WaitlistEntry e : queue) {
+
+            if (e.getResident().getResidentId().equals(resident.getResidentId())
+                    && e.getStationId().equals(stationId)) {
+
+                found = e;
+                break;
+            }
+        }
+
+        if (found != null) {
+            queue.remove(found);
+
             System.out.println("[LEFT]    " + resident.getName()
                     + " left the queue for Station " + stationId);
+
             return true;
         }
 
         System.out.println("[ERROR]   " + resident.getName()
                 + " is not in the queue for Station " + stationId);
+
         return false;
     }
 
@@ -415,9 +429,14 @@ class WaitlistManager {
 
     /* ---------- Helper: get queue in current strategy order ---------- */
     private List<WaitlistEntry> getOrderedQueue(String stationId) {
-        List<WaitlistEntry> remaining = queue.stream()
-                .filter(e -> e.getStationId().equals(stationId))
-                .collect(Collectors.toList());
+        List<WaitlistEntry> remaining = new ArrayList<>();
+
+        for (WaitlistEntry e : queue) {
+
+            if (e.getStationId().equals(stationId)) {
+                remaining.add(e);
+            }
+        }
 
         List<WaitlistEntry> ordered = new ArrayList<>();
         while (!remaining.isEmpty()) {
