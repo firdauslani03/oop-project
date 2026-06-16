@@ -1,3 +1,4 @@
+import java.io.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -8,47 +9,51 @@ import java.util.*;
  * OOP Concepts used in this file:
  *  - ENCAPSULATION  : private fields + getters in Resident, WaitlistEntry, QueueRecord
  *  - ABSTRACTION    : QueueStrategy interface hides HOW the next resident is chosen
- *  - POLYMORPHISM   : QueueStrategy is implemented by NormalQueueStrategy. The
- *                      WaitlistManager calls strategy.getNext(...) without caring
- *                      which concrete implementation is plugged in, so additional
- *                      strategies could be added later without changing
- *                      WaitlistManager itself.
+ *  - POLYMORPHISM   : QueueStrategy is implemented by NormalQueueStrategy.
  *  - COMPOSITION    : WaitlistManager "has" a List<WaitlistEntry>, a QueueStrategy,
  *                      and a QueueHistory object
  *
- * ------------------------------------------------------------
- * MODULE BOUNDARY (interaction with Member 3 - Booking module)
- * ------------------------------------------------------------
- *   Booking SUCCESS (slot available)
- *        -> handled entirely by the Booking & Reservation module.
- *           This Waitlist module is NOT involved. A confirmed
- *           booking can never be displaced by anyone.
+ * Exception Handling:
+ *  - ResidentAlreadyInQueueException : thrown when a resident tries to join a queue
+ *                                       they are already in
+ *  - EmptyQueueException             : thrown when promoteNext() is called on an
+ *                                       empty queue for a given station
+ *  - InvalidQueueSelectionException  : thrown when a null/blank stationId is given
  *
- *   Booking FAILS (slot already full)
- *        -> resident calls WaitlistManager.joinQueue(resident, stationId)
- *           They now have NO reservation, only a place in line.
- *
- *   Confirmed booking is CANCELLED (slot becomes free)
- *        -> Booking module calls WaitlistManager.promoteNext(stationId)
- *           The waitlist entry chosen (based on the active
- *           QueueStrategy) is removed from the waitlist and is
- *           turned into a NEW confirmed booking by the Booking
- *           module.
- *
- *   NOTE: The Priority Queue feature has been removed. Since this
- *   is a PRE-BOOKING system (residents plan ahead and join the
- *   waitlist expecting a roughly predictable position/wait time),
- *   allowing a later-joining "priority" member to jump ahead of
- *   residents who already joined the waitlist would disrupt their
- *   plans. All waitlist promotions are now strictly First-Come,
- *   First-Served (FIFO) via NormalQueueStrategy.
+ * File I/O:
+ *  - queue.txt        : persists the current live waitlist (written on every change)
+ *  - queueHistory.txt : persists completed promotion records (appended on each promotion)
  * ============================================================ */
 
 
 /* ----------------------------------------------------------
+ * Custom Exceptions
+ * ---------------------------------------------------------- */
+
+/** Thrown when a resident attempts to join a queue they are already in. */
+class ResidentAlreadyInQueueException extends Exception {
+    public ResidentAlreadyInQueueException(String residentName, String stationId) {
+        super(residentName + " is already in the queue for Station " + stationId);
+    }
+}
+
+/** Thrown when promoteNext() is called but no residents are waiting for that station. */
+class EmptyQueueException extends Exception {
+    public EmptyQueueException(String stationId) {
+        super("The queue for Station " + stationId + " is empty — no one to promote.");
+    }
+}
+
+/** Thrown when a null or blank stationId is provided. */
+class InvalidQueueSelectionException extends Exception {
+    public InvalidQueueSelectionException(String detail) {
+        super("Invalid queue selection: " + detail);
+    }
+}
+
+
+/* ----------------------------------------------------------
  * 1. Resident class
- *    Represents a resident who can join the queue.
- *    ENCAPSULATION: fields are private, accessed via getters
  * ---------------------------------------------------------- */
 class Resident {
     private String residentId;
@@ -59,12 +64,12 @@ class Resident {
         this.name = name;
     }
 
-    public String getResidentId() {
-        return residentId;
+    public String getResidentId() { 
+        return residentId; 
     }
 
-    public String getName() {
-        return name;
+    public String getName() { 
+        return name; 
     }
 
     @Override
@@ -76,7 +81,6 @@ class Resident {
 
 /* ----------------------------------------------------------
  * 2. WaitlistEntry class
- *    Represents ONE record of a resident waiting for a station.
  * ---------------------------------------------------------- */
 class WaitlistEntry {
     private Resident resident;
@@ -89,15 +93,15 @@ class WaitlistEntry {
         this.joinTime = LocalDateTime.now();
     }
 
-    public Resident getResident() {
-        return resident;
+    public Resident getResident() { 
+        return resident; 
     }
 
-    public String getStationId() {
-        return stationId;
+    public String getStationId() { 
+        return stationId; 
     }
 
-    public LocalDateTime getJoinTime() {
+    public LocalDateTime getJoinTime() { 
         return joinTime;
     }
 
@@ -110,64 +114,42 @@ class WaitlistEntry {
 
 /* ----------------------------------------------------------
  * 3. QueueStrategy interface (ABSTRACTION)
- *    Defines WHAT a strategy must be able to do,
- *    without saying HOW it picks the next resident.
  * ---------------------------------------------------------- */
 interface QueueStrategy {
-    /**
-     * Decide which entry should be served next for a given station.
-     */
     WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId);
-
-    /**
-     * Name of the strategy, for display purposes.
-     */
     String getStrategyName();
 }
 
 
 /* ----------------------------------------------------------
- * 4. NormalQueueStrategy (POLYMORPHISM)
- *    Simple First-Come-First-Served (FIFO).
- *    This is the ONLY queue strategy used by the system.
+ * 4. NormalQueueStrategy — FIFO (POLYMORPHISM)
  * ---------------------------------------------------------- */
 class NormalQueueStrategy implements QueueStrategy {
 
     @Override
     public WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId) {
-
         WaitlistEntry earliest = null;
-
         for (WaitlistEntry e : queue) {
-
-            if (!e.getStationId().equals(stationId))
-                continue;
-
-            if (earliest == null ||
-                e.getJoinTime().isBefore(earliest.getJoinTime())) {
-
+            if (!e.getStationId().equals(stationId)) continue;
+            if (earliest == null || e.getJoinTime().isBefore(earliest.getJoinTime())) {
                 earliest = e;
             }
         }
-
         return earliest;
     }
 
     @Override
-    public String getStrategyName() {
-        return "Normal (FIFO)";
-    }
+    public String getStrategyName() { return "Normal (FIFO)"; }
 }
 
 
 /* ----------------------------------------------------------
  * 5. QueueRecord class
- *    Stores ONE completed queue record (for history).
  * ---------------------------------------------------------- */
-class QueueRecord {  //only created when someone was previously in the waitlist and later gets promoted
+class QueueRecord {
     private String stationId;
     private LocalDateTime joinTime;
-    private LocalDateTime promotedTime;  //Moved from waiting queue → confirmed booking
+    private LocalDateTime promotedTime;
 
     public QueueRecord(String stationId, LocalDateTime joinTime, LocalDateTime promotedTime) {
         this.stationId = stationId;
@@ -175,32 +157,34 @@ class QueueRecord {  //only created when someone was previously in the waitlist 
         this.promotedTime = promotedTime;
     }
 
-    public long getWaitMinutes() {
-        return Duration.between(joinTime, promotedTime).toMinutes();
+    public long   getWaitMinutes() { 
+        return Duration.between(joinTime, promotedTime).toMinutes(); 
     }
 
-    public String getStationId() {
-        return stationId;
+    public String getStationId() { 
+        return stationId; 
     }
 
     @Override
     public String toString() {
         return "Station " + stationId
-                + " | Joined: " + joinTime
+                + " | Joined: "   + joinTime
                 + " | Promoted: " + promotedTime
-                + " | Waited: " + getWaitMinutes() + " min";
+                + " | Waited: "   + getWaitMinutes() + " min";
+    }
+
+    /** Serialize to a single CSV line for queueHistory.txt. */
+    public String toCsvLine(String residentId, String residentName) {
+        return residentId + "," + residentName + "," + stationId + ","
+                + joinTime + "," + promotedTime;
     }
 }
 
 
 /* ----------------------------------------------------------
  * 6. QueueHistory class
- *    Keeps track of each resident's queue statistics:
- *      - number of times joined
- *      - list of completed records
- *      - average wait time
  * ---------------------------------------------------------- */
-class QueueHistory {  //Map => dictionary (in Python)
+class QueueHistory {
     private Map<String, Integer> joinCount = new HashMap<>();
     private Map<String, List<QueueRecord>> records = new HashMap<>();
 
@@ -209,101 +193,149 @@ class QueueHistory {  //Map => dictionary (in Python)
     }
 
     public void recordPromotion(String residentId, QueueRecord record) {
-        if (!records.containsKey(residentId)) {
-            records.put(residentId,new ArrayList<>());
-        }
-
-        records.get(residentId).add(record);
+        records.computeIfAbsent(residentId, k -> new ArrayList<>()).add(record);
     }
 
-    public int getJoinCount(String residentId) {
-        return joinCount.getOrDefault(residentId, 0);
+    public int getJoinCount(String residentId) { 
+        return joinCount.getOrDefault(residentId, 0); 
     }
 
-    public List<QueueRecord> getRecords(String residentId) {
-        return records.getOrDefault(residentId, new ArrayList<>());
+    public List<QueueRecord> getRecords(String residentId) { 
+        return records.getOrDefault(residentId, new ArrayList<>()); 
     }
 
     public double getAverageWaitTime(String residentId) {
         List<QueueRecord> list = getRecords(residentId);
-        if (list.isEmpty()) {
-            return 0.0;
-        }
+        if (list.isEmpty()) return 0.0;
         long total = 0;
-        for (QueueRecord r : list) {
-            total += r.getWaitMinutes();
-        }
+        for (QueueRecord r : list) total += r.getWaitMinutes();
         return (double) total / list.size();
     }
 }
 
 
 /* ----------------------------------------------------------
- * 7. WaitlistManager class
- *    The "brain" of the module. Manages the live queue,
- *    applies the chosen strategy, and updates history.
+ * 7. WaitlistManager class (COMPOSITION)
  *
- *    COMPOSITION: this class is built FROM other objects
- *    (List<WaitlistEntry>, QueueStrategy, QueueHistory)
+ *    File I/O contract
+ *    -----------------
+ *    queue.txt  (overwritten on every mutation)
+ *      Format per line:  residentId,residentName,stationId,joinTime
+ *      Example:          R001,Alice,FAST-01,2025-06-01T09:00:00
+ *
+ *    queueHistory.txt  (appended on every promotion)
+ *      Format per line:  residentId,residentName,stationId,joinTime,promotedTime
+ *      Example:          R001,Alice,FAST-01,2025-06-01T09:00:00,2025-06-01T09:45:00
  * ---------------------------------------------------------- */
 class WaitlistManager {
 
-    private List<WaitlistEntry> queue = new ArrayList<>();
-    private QueueStrategy strategy;          // currently always NormalQueueStrategy
-    private QueueHistory history = new QueueHistory();
-
-    // Assumption: each charging session takes about 30 minutes
+    private static final String QUEUE_FILE = "queue.txt";
+    private static final String HISTORY_FILE = "queueHistory.txt";
     private static final int ESTIMATED_MINUTES_PER_SLOT = 30;
+
+    private List<WaitlistEntry> queue = new ArrayList<>();
+    private QueueStrategy strategy;
+    private QueueHistory history = new QueueHistory();
 
     public WaitlistManager(QueueStrategy strategy) {
         this.strategy = strategy;
     }
 
-    /* ---------- Feature 1: Join Waiting Queue ---------- */
-    public void joinQueue(Resident resident, String stationId) {
+    // ================================================================
+    //  VALIDATION HELPER
+    // ================================================================
+
+    /**
+     * Validates that stationId is not null or blank.
+     *
+     * @throws InvalidQueueSelectionException if stationId is invalid
+     */
+    private void validateStationId(String stationId) throws InvalidQueueSelectionException {
+        if (stationId == null || stationId.trim().isEmpty()) {
+            throw new InvalidQueueSelectionException(
+                    "stationId cannot be null or blank.");
+        }
+    }
+
+    // ================================================================
+    //  Feature 1 : Join Queue
+    // ================================================================
+
+    /**
+     * Adds a resident to the waitlist for the given station.
+     *
+     * @throws InvalidQueueSelectionException  if stationId is null/blank
+     * @throws ResidentAlreadyInQueueException if resident is already waiting at that station
+     */
+    public void joinQueue(Resident resident, String stationId)
+            throws InvalidQueueSelectionException, ResidentAlreadyInQueueException {
+
+        validateStationId(stationId);
+
+        // Check for duplicate
+        for (WaitlistEntry e : queue) {
+            if (e.getResident().getResidentId().equals(resident.getResidentId())
+                    && e.getStationId().equals(stationId)) {
+                throw new ResidentAlreadyInQueueException(resident.getName(), stationId);
+            }
+        }
+
         WaitlistEntry entry = new WaitlistEntry(resident, stationId);
         queue.add(entry);
         history.recordJoin(resident.getResidentId());
         System.out.println("[JOINED]  " + entry);
+        saveQueueToFile();
     }
 
-    /* ---------- Feature 2: Leave Queue ---------- */
-    public boolean leaveQueue(Resident resident, String stationId) {
+    // ================================================================
+    //  Feature 2 : Leave Queue
+    // ================================================================
 
-        WaitlistEntry found = null;
+    /**
+     * Removes a resident from the waitlist for the given station.
+     *
+     * @throws InvalidQueueSelectionException if stationId is null/blank
+     */
+    public boolean leaveQueue(Resident resident, String stationId)
+            throws InvalidQueueSelectionException {
+
+        validateStationId(stationId);
 
         for (WaitlistEntry e : queue) {
-
             if (e.getResident().getResidentId().equals(resident.getResidentId())
                     && e.getStationId().equals(stationId)) {
-
-                found = e;
-                break;
+                queue.remove(e);
+                System.out.println("[LEFT]    " + resident.getName()
+                        + " left the queue for Station " + stationId);
+                saveQueueToFile();
+                return true;
             }
-        }
-
-        if (found != null) {
-            queue.remove(found);
-
-            System.out.println("[LEFT]    " + resident.getName()
-                    + " left the queue for Station " + stationId);
-
-            return true;
         }
 
         System.out.println("[ERROR]   " + resident.getName()
                 + " is not in the queue for Station " + stationId);
-
         return false;
     }
 
-    /* ---------- Feature 3: View Queue Status ---------- */
-    public void viewQueueStatus(Resident resident, String stationId) {
-        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
+    // ================================================================
+    //  Feature 3 : View Queue Status
+    // ================================================================
 
+    /**
+     * Prints a resident's current position and estimated wait for a station.
+     *
+     * @throws InvalidQueueSelectionException if stationId is null/blank
+     */
+    public void viewQueueStatus(Resident resident, String stationId)
+            throws InvalidQueueSelectionException {
+
+        validateStationId(stationId);
+
+        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
         int position = -1;
         for (int i = 0; i < ordered.size(); i++) {
-            if (ordered.get(i).getResident().getResidentId().equals(resident.getResidentId())) {
+            if (ordered.get(i).getResident().getResidentId()
+                    .equals(resident.getResidentId())) {
                 position = i + 1;
                 break;
             }
@@ -322,131 +354,247 @@ class WaitlistManager {
                 + " | Estimated wait: " + estimatedWait + " min");
     }
 
-    /* ---------- Feature 4: Automatic Queue Promotion ---------- */
-    public void promoteNext(String stationId) {
-        WaitlistEntry next = strategy.getNext(queue, stationId);
+    // ================================================================
+    //  Feature 4 : Promote Next (called by Booking module on cancellation)
+    // ================================================================
 
+    /**
+     * Promotes the next resident in line for the given station.
+     *
+     * @throws InvalidQueueSelectionException if stationId is null/blank
+     * @throws EmptyQueueException if no residents are waiting
+     */
+    public void promoteNext(String stationId)
+            throws InvalidQueueSelectionException, EmptyQueueException {
+
+        validateStationId(stationId);
+
+        WaitlistEntry next = strategy.getNext(queue, stationId);
         if (next == null) {
-            System.out.println("[PROMOTE] No residents waiting for Station " + stationId);
-            return;
+            throw new EmptyQueueException(stationId);
         }
 
         queue.remove(next);
 
-        LocalDateTime now = LocalDateTime.now();
-        QueueRecord record = new QueueRecord(stationId, next.getJoinTime(), now);
+        LocalDateTime now    = LocalDateTime.now();
+        QueueRecord   record = new QueueRecord(stationId, next.getJoinTime(), now);
         history.recordPromotion(next.getResident().getResidentId(), record);
 
         System.out.println("[PROMOTE] " + next.getResident().getName()
                 + " has been assigned to Station " + stationId
                 + " (waited " + record.getWaitMinutes() + " min)");
+
+        saveQueueToFile();
+        appendHistoryToFile(next.getResident(), record);
     }
 
-    /* ---------- Feature 6: Queue History ---------- */
+    // ================================================================
+    //  Feature 6 : Queue History
+    // ================================================================
+
     public void viewQueueHistory(Resident resident) {
         String id = resident.getResidentId();
         System.out.println("\n--- Queue History: " + resident.getName() + " ---");
-        System.out.println("Number of times joined queue : " + history.getJoinCount(id));
+        System.out.println("Times joined queue    : " + history.getJoinCount(id));
 
         List<QueueRecord> records = history.getRecords(id);
         if (records.isEmpty()) {
-            System.out.println("Completed records           : none yet");
+            System.out.println("Completed records     : none yet");
         } else {
             System.out.println("Completed records:");
             for (QueueRecord r : records) {
                 System.out.println("   - " + r);
             }
         }
-
-        System.out.printf("Average waiting time         : %.2f min%n",
+        System.out.printf("Average waiting time  : %.2f min%n",
                 history.getAverageWaitTime(id));
     }
 
-    /* ---------- Helper: get queue in current strategy order ---------- */
+    // ================================================================
+    //  Helper : print current queue
+    // ================================================================
+
+    public void printCurrentQueue(String stationId) {
+        System.out.println("\n--- Current Queue: Station " + stationId
+                + " | Strategy: " + strategy.getStrategyName() + " ---");
+        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
+        if (ordered.isEmpty()) {
+            System.out.println("(empty)");
+            return;
+        }
+        int pos = 1;
+        for (WaitlistEntry e : ordered) {
+            System.out.println(pos++ + ". " + e.getResident());
+        }
+    }
+
     private List<WaitlistEntry> getOrderedQueue(String stationId) {
         List<WaitlistEntry> remaining = new ArrayList<>();
-
         for (WaitlistEntry e : queue) {
-
-            if (e.getStationId().equals(stationId)) {
-                remaining.add(e);
-            }
+            if (e.getStationId().equals(stationId)) remaining.add(e);
         }
-
         List<WaitlistEntry> ordered = new ArrayList<>();
         while (!remaining.isEmpty()) {
             WaitlistEntry next = strategy.getNext(remaining, stationId);
-            if (next == null) {
-                break;
-            }
+            if (next == null) break;
             ordered.add(next);
             remaining.remove(next);
         }
         return ordered;
     }
 
-    /* ---------- Helper: print current queue order ---------- */
-    public void printCurrentQueue(String stationId) {
-        System.out.println("\n--- Current Queue: Station " + stationId
-                + " | Strategy: " + strategy.getStrategyName() + " ---");
+    // ================================================================
+    //  File I/O — queue.txt
+    // ================================================================
 
-        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
-        if (ordered.isEmpty()) {
-            System.out.println("(empty)");
-            return;
+    /**
+     * Overwrites queue.txt with the current state of the live waitlist.
+     * Each line: residentId,residentName,stationId,joinTime
+     */
+    private void saveQueueToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(QUEUE_FILE))) {
+            for (WaitlistEntry e : queue) {
+                writer.write(e.getResident().getResidentId() + ","
+                        + e.getResident().getName() + ","
+                        + e.getStationId() + ","
+                        + e.getJoinTime());
+                writer.newLine();
+            }
+            System.out.println("[FILE]    queue.txt saved (" + queue.size() + " entries).");
+        } catch (IOException ex) {
+            System.err.println("[FILE ERROR] Could not save queue.txt: " + ex.getMessage());
         }
+    }
 
-        int position = 1;
-        for (WaitlistEntry e : ordered) {
-            System.out.println(position + ". " + e.getResident());
-            position++;
+    // ================================================================
+    //  File I/O — queueHistory.txt
+    // ================================================================
+
+    /**
+     * Appends one promotion record to queueHistory.txt.
+     * Format: residentId,residentName,stationId,joinTime,promotedTime
+     */
+    private void appendHistoryToFile(Resident resident, QueueRecord record) {
+        try (BufferedWriter writer = new BufferedWriter(
+                new FileWriter(HISTORY_FILE, true))) {   // true = append mode
+            writer.write(record.toCsvLine(
+                    resident.getResidentId(), resident.getName()));
+            writer.newLine();
+            System.out.println("[FILE]    queueHistory.txt updated.");
+        } catch (IOException ex) {
+            System.err.println("[FILE ERROR] Could not write queueHistory.txt: " + ex.getMessage());
         }
     }
 }
 
 
 /* ============================================================
- * 8. Main class - demonstrates all features
+ * 8. Main class — demonstrates all features
+ *    Exception handling is shown with try-catch blocks.
  * ============================================================ */
 public class SmartQueueManagement {
 
     public static void main(String[] args) {
 
-        // Create some residents
-        Resident alice   = new Resident("R001", "Alice");
-        Resident bob     = new Resident("R002", "Bob");
+        Resident alice = new Resident("R001", "Alice");
+        Resident bob = new Resident("R002", "Bob");
         Resident charlie = new Resident("R003", "Charlie");
-        Resident diana   = new Resident("R004", "Diana");
+        Resident diana = new Resident("R004", "Diana");
 
         String stationId = "FAST-01";
 
-        // Always use the Normal (FIFO) strategy
         WaitlistManager manager = new WaitlistManager(new NormalQueueStrategy());
 
-        System.out.println("===== STEP 1: Residents join the queue (FIFO order) =====");
-        manager.joinQueue(alice, stationId);
-        manager.joinQueue(charlie, stationId);
-        manager.joinQueue(bob, stationId);
-        manager.joinQueue(diana, stationId);
+        // ----------------------------------------------------------------
+        System.out.println("===== STEP 1: Residents join the queue =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.joinQueue(alice,   stationId);
+            manager.joinQueue(charlie, stationId);
+            manager.joinQueue(bob,     stationId);
+            manager.joinQueue(diana,   stationId);
+        } catch (InvalidQueueSelectionException | ResidentAlreadyInQueueException e) {
+            System.err.println("[EXCEPTION] " + e.getMessage());
+        }
         manager.printCurrentQueue(stationId);
 
-        System.out.println("\n===== STEP 2: View queue status =====");
-        manager.viewQueueStatus(alice, stationId);
-        manager.viewQueueStatus(bob, stationId);
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 2: Duplicate join attempt (Exception demo) =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.joinQueue(alice, stationId);   // Alice is already in queue
+        } catch (ResidentAlreadyInQueueException e) {
+            System.err.println("[EXCEPTION] ResidentAlreadyInQueueException: " + e.getMessage());
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] InvalidQueueSelectionException: " + e.getMessage());
+        }
 
-        System.out.println("\n===== STEP 3: A booking is cancelled -> automatic promotion =====");
-        manager.promoteNext(stationId);   // Alice (earliest) is promoted first
-        manager.printCurrentQueue(stationId);
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 3: Invalid station ID (Exception demo) =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.joinQueue(alice, "");    // blank stationId
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] InvalidQueueSelectionException: " + e.getMessage());
+        } catch (ResidentAlreadyInQueueException e) {
+            System.err.println("[EXCEPTION] ResidentAlreadyInQueueException: " + e.getMessage());
+        }
 
-        System.out.println("\n===== STEP 4: Another cancellation -> next promotion =====");
-        manager.promoteNext(stationId);   // Charlie (next earliest) is promoted next
-        manager.printCurrentQueue(stationId);
+        try {
+            manager.joinQueue(alice, null);  // null stationId
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] InvalidQueueSelectionException: " + e.getMessage());
+        } catch (ResidentAlreadyInQueueException e) {
+            System.err.println("[EXCEPTION] ResidentAlreadyInQueueException: " + e.getMessage());
+        }
 
-        System.out.println("\n===== STEP 5: Diana leaves the queue voluntarily =====");
-        manager.leaveQueue(diana, stationId);
-        manager.printCurrentQueue(stationId);
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 4: View queue status =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.viewQueueStatus(alice, stationId);
+            manager.viewQueueStatus(bob,   stationId);
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] " + e.getMessage());
+        }
 
-        System.out.println("\n===== STEP 6: View queue history =====");
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 5: Booking cancellation -> automatic promotion =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.promoteNext(stationId);   // Alice promoted
+            manager.printCurrentQueue(stationId);
+            manager.promoteNext(stationId);   // Charlie promoted
+            manager.printCurrentQueue(stationId);
+        } catch (InvalidQueueSelectionException | EmptyQueueException e) {
+            System.err.println("[EXCEPTION] " + e.getMessage());
+        }
+
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 6: Diana leaves voluntarily =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.leaveQueue(diana, stationId);
+            manager.printCurrentQueue(stationId);
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] " + e.getMessage());
+        }
+
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 7: Empty queue promotion (Exception demo) =====");
+        // ----------------------------------------------------------------
+        try {
+            manager.promoteNext(stationId);   // only Bob left
+            manager.promoteNext(stationId);   // now truly empty -> exception
+        } catch (EmptyQueueException e) {
+            System.err.println("[EXCEPTION] EmptyQueueException: " + e.getMessage());
+        } catch (InvalidQueueSelectionException e) {
+            System.err.println("[EXCEPTION] InvalidQueueSelectionException: " + e.getMessage());
+        }
+
+        // ----------------------------------------------------------------
+        System.out.println("\n===== STEP 8: Queue history =====");
+        // ----------------------------------------------------------------
         manager.viewQueueHistory(alice);
         manager.viewQueueHistory(charlie);
         manager.viewQueueHistory(bob);
