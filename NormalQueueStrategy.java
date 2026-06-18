@@ -1,3 +1,5 @@
+import java.util.List;
+
 interface QueueStrategy {
     WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId);
     String getStrategyName();
