@@ -18,10 +18,7 @@ public class Resident extends User {
         this.vehicles = new ArrayList<>();
     }
 
-    // Convenience constructor for existing two-argument usage
-    public Resident(String residentId, String name) {
-        this(residentId, name, "defaultPassword", "", "");
-    }
+    // Note: removed convenience constructor that used a default password
 
     public String getResidentId() { 
         return residentId; 

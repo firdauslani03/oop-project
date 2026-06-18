@@ -5,10 +5,10 @@ public class SmartQueueManagement {
 
     public static void main(String[] args) {
 
-        Resident alice = new Resident("R001", "Alice");
-        Resident bob = new Resident("R002", "Bob");
-        Resident charlie = new Resident("R003", "Charlie");
-        Resident diana = new Resident("R004", "Diana");
+        Resident alice = new Resident("R001", "Alice", "alice123", "900101010101", "010-0000-000");
+        Resident bob = new Resident("R002", "Bob", "bob123", "900202020202", "010-0000-001");
+        Resident charlie = new Resident("R003", "Charlie", "charlie123", "900303030303", "010-0000-002");
+        Resident diana = new Resident("R004", "Diana", "diana123", "900404040404", "010-0000-003");
 
         String stationId = "FAST-01";
 

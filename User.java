@@ -5,7 +5,7 @@ public abstract class User {
 
     public User(String username, String password, String role) {
         this.username = username;
-        this.password = password;
+        this.password = PasswordUtil.hash(password);
         this.role = role;
     }
 
@@ -18,7 +18,7 @@ public abstract class User {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.password = PasswordUtil.hash(password);
     }
 
     public String getRole() {
@@ -26,6 +26,7 @@ public abstract class User {
     }
 
     public boolean authenticate(String inputPassword) {
-        return this.password.equals(inputPassword);
+        String hashed = PasswordUtil.hash(inputPassword);
+        return this.password != null && this.password.equals(hashed);
     }
 }
