@@ -11,6 +11,12 @@ public class WaitlistEntry {
         this.joinTime = LocalDateTime.now();
     }
 
+    public WaitlistEntry(Resident resident, String stationId, LocalDateTime joinTime) {
+        this.resident = resident;
+        this.stationId = stationId;
+        this.joinTime = joinTime;
+    }
+
     public Resident getResident() { 
         return resident; 
     }
