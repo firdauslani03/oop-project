@@ -4,12 +4,13 @@ import Exception.*;
 public class Main {
     private ResidentManager manager;
     private BookingManager bookingManager;
+    private WaitlistManager waitlistManager;
     private Scanner scanner;
 
     public Main() {
         this.manager = new ResidentManager();
-        WaitlistManager waitlistManager = new WaitlistManager(new NormalQueueStrategy());
-        this.bookingManager = new BookingManager(waitlistManager);
+        this.waitlistManager = new WaitlistManager(new NormalQueueStrategy());
+        this.bookingManager = new BookingManager(this.waitlistManager);
         this.scanner = new Scanner(System.in);
     }
 
@@ -90,7 +91,8 @@ public class Main {
             System.out.println("1. Profile Management");
             System.out.println("2. Vehicle Management");
             System.out.println("3. Manage Bookings");
-            System.out.println("4. Log Out");
+            System.out.println("4. Waitlist Queue");
+            System.out.println("5. Log Out");
             System.out.print("Choose an option: ");
 
             String choice = scanner.nextLine().trim();
@@ -112,10 +114,14 @@ public class Main {
                     }
                     break;
                 case "4":
+                    QueueMenu queueMenu = new QueueMenu(waitlistManager, resident, scanner);
+                    queueMenu.start();
+                    break;
+                case "5":
                     System.out.println("Logging out of account...");
                     return;
                 default:
-                    System.out.println("Invalid option. Choose an option between 1 and 4.");
+                    System.out.println("Invalid option. Choose an option between 1 and 5.");
             }
         }
     }
