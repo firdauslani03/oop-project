@@ -1,13 +1,4 @@
-<<<<<<< HEAD
-import java.util.List;
-
-interface QueueStrategy {
-    WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId);
-    String getStrategyName();
-}
-=======
 import java.util.ArrayList;
->>>>>>> origin/xinyee
 
 public class NormalQueueStrategy implements QueueStrategy {
 

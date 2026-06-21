@@ -238,7 +238,8 @@ public class WaitlistManager {
                         String stationId = parts[2];
                         LocalDateTime joinTime = LocalDateTime.parse(parts[3]);
 
-                        Resident resident = new Resident(residentId, name);
+                        // Resident constructor requires password, icNumber, phoneNumber
+                        Resident resident = new Resident(residentId, name, "", "", "");
                         WaitlistEntry entry = new WaitlistEntry(resident, stationId, joinTime);
                         queue.add(entry);
                         history.recordJoin(residentId);

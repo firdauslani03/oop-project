@@ -99,6 +99,12 @@ public class ResidentMenuUI {
                     System.out.println("Name         : " + resident.getName());
                     System.out.println("IC Number    : " + resident.getIcNumber());
                     System.out.println("Phone Number : " + resident.getPhoneNumber());
+                    System.out.println("Registered Vehicles: " + resident.getVehicles().size());
+                    if (!resident.getVehicles().isEmpty()) {
+                        for (Vehicle v : resident.getVehicles()) {
+                            System.out.println("  - " + v);
+                        }
+                    }
                     break;
 
                 case "2": // Feature 4: Update Profile
@@ -109,10 +115,13 @@ public class ResidentMenuUI {
                     break;
 
                 case "3": // Feature 5: Change Password
+                    System.out.print("Enter current Password: ");
+                    String current = scanner.nextLine().trim();
                     System.out.print("Enter new secure Password: ");
                     String newPass = scanner.nextLine().trim();
-                    manager.updateProfile(resident, null, newPass);
-                    System.out.println("Success! Password updated securely.");
+                    boolean changed = manager.changePassword(resident, current, newPass);
+                    if (changed) System.out.println("Success! Password updated securely.");
+                    else System.out.println("Error: password change failed (wrong current password or weak new password).");
                     break;
 
                 case "4": // Feature 6 & 7: Add Vehicle & EV Profile Management

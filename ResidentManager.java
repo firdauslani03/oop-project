@@ -46,6 +46,17 @@ public class ResidentManager {
         saveDataToFile();
     }
 
+    // Secure password change requiring current password and strength check
+    public boolean changePassword(Resident resident, String currentPassword, String newPassword) {
+        if (resident == null) return false;
+        if (currentPassword == null || newPassword == null) return false;
+        if (!resident.authenticate(currentPassword)) return false;
+        if (!PasswordUtil.isStrong(newPassword)) return false;
+        resident.setPassword(newPassword);
+        saveDataToFile();
+        return true;
+    }
+
     // Feature 6 & 7: Vehicle & EV Profile Management
     public void addVehicleToResident(Resident resident, String model, double capacity) {
         Vehicle vehicle = new Vehicle(model, capacity);
