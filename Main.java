@@ -3,34 +3,22 @@ import java.util.Scanner;
 import Exception.*;
 
 public class Main {
-    private static final String ADMIN_USERNAME = "admin";
-    private static final String ADMIN_PASSWORD = "admin123";
+    public static void main(String[] args) {
 
-    private ResidentManager manager;
-    private StationManager stationManager;
-    private BookingManager bookingManager;
-    private WaitlistManager waitlistManager;
-    private Scanner scanner;
+        final String ADMIN_USERNAME = "admin";
+        final String ADMIN_PASSWORD = "admin123";
 
-    public Main() {
-        this.manager = new ResidentManager();
-        this.scanner = new Scanner(System.in);
+        ResidentManager manager = new ResidentManager();
+        StationManager stationManager = new StationManager();       
+        WaitlistManager waitlistManager = new WaitlistManager(new NormalQueueStrategy());
+        BookingManager bookingManager = new BookingManager(waitlistManager, stationManager); 
+ 
+        Scanner scanner = new Scanner(System.in);
 
         // Station data must load before bookings, since bookings reference stations by ID.
-        this.stationManager = new StationManager();
-        this.stationManager.seedDefaultStationsIfEmpty();
+        stationManager.seedDefaultStationsIfEmpty();
+        stationManager.setBookingManager(bookingManager);
 
-        this.waitlistManager = new WaitlistManager(new NormalQueueStrategy());
-        this.bookingManager = new BookingManager(this.waitlistManager, this.stationManager);
-        this.stationManager.setBookingManager(this.bookingManager);
-    }
-
-    public static void main(String[] args) {
-        Main app = new Main();
-        app.start();
-    }
-
-    public void start() {
         while (true) {
             System.out.println("\n=================================");
             System.out.println("  EV COMMUNITY MANAGEMENT SYSTEM  ");
@@ -44,13 +32,13 @@ public class Main {
             String choice = scanner.nextLine().trim();
             switch (choice) {
                 case "1":
-                    handleRegistration();
+                    handleRegistration(scanner, manager);
                     break;
                 case "2":
-                    handleLogin();
+                    handleLogin(scanner, manager, bookingManager, stationManager, waitlistManager);
                     break;
                 case "3":
-                    handleAdminLogin();
+                    handleAdminLogin(scanner, stationManager, ADMIN_USERNAME, ADMIN_PASSWORD);
                     break;
                 case "4":
                     System.out.println("Thank you for using the system. Goodbye!");
@@ -61,47 +49,58 @@ public class Main {
         }
     }
 
-    private void handleRegistration() {
+    static void handleRegistration(Scanner scanner, ResidentManager manager) {
+
         System.out.println("\n--- ACCOUNT REGISTRATION ---");
         System.out.print("Enter unique Resident ID: ");
         String id = scanner.nextLine().trim();
+
         System.out.print("Enter Full Name: ");
         String name = scanner.nextLine().trim();
+
         System.out.print("Enter Password: ");
         String password = scanner.nextLine().trim();
+
         System.out.print("Enter IC Number (12 digits, no hyphens): ");
         String ic = scanner.nextLine().trim();
+
         System.out.print("Enter Phone Number: ");
         String phone = scanner.nextLine().trim();
 
         try {
             manager.registerResident(id, name, password, ic, phone);
             System.out.println("Registration successful. You can now log in.");
-        } catch (DuplicateAccountException | InvalidIcFormatException e) {
+        } catch (DuplicateAccountException e) {
+            System.out.println("[REGISTRATION ERROR] " + e.getMessage());
+        } catch (InvalidIcFormatException e) {
             System.out.println("[REGISTRATION ERROR] " + e.getMessage());
         }
     }
 
-    private void handleLogin() {
+    static void handleLogin(Scanner scanner, ResidentManager manager, BookingManager bookingManager, StationManager stationManager, WaitlistManager waitlistManager) {
+        
         System.out.println("\n--- SYSTEM LOGIN ---");
         System.out.print("Enter Resident ID: ");
         String id = scanner.nextLine().trim();
+
         System.out.print("Enter Password: ");
         String password = scanner.nextLine().trim();
 
         try {
             Resident loggedInResident = manager.login(id, password);
             System.out.println("\nLogin successful! Welcome back, " + loggedInResident.getName() + ".");
-            showResidentMenu(loggedInResident);
+            showResidentMenu(loggedInResident, scanner, manager, bookingManager, stationManager, waitlistManager);
         } catch (InvalidLoginException e) {
             System.out.println("[LOGIN ERROR] " + e.getMessage());
         }
     }
 
-    private void handleAdminLogin() {
+    static void handleAdminLogin(Scanner scanner, StationManager stationManager, String ADMIN_USERNAME, String ADMIN_PASSWORD) {
+
         System.out.println("\n--- ADMIN LOGIN ---");
         System.out.print("Enter Admin Username: ");
         String username = scanner.nextLine().trim();
+
         System.out.print("Enter Admin Password: ");
         String password = scanner.nextLine().trim();
 
@@ -114,7 +113,8 @@ public class Main {
         }
     }
 
-    private void showResidentMenu(Resident resident) {
+    static void showResidentMenu(Resident resident, Scanner scanner, ResidentManager manager, BookingManager bookingManager, StationManager stationManager, WaitlistManager waitlistManager) {
+        
         while (true) {
             System.out.println("\n=================================");
             System.out.println("      RESIDENT DASHBOARD         ");

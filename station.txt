@@ -1,0 +1,10 @@
+FAST-01,Fast,Block 1,50.0,Active,false,0
+FAST-02,Fast,Block 2,50.0,Active,false,0
+FAST-03,Fast,Block 3,50.0,Active,false,0
+FAST-04,Fast,Block 4,50.0,Active,false,0
+FAST-05,Fast,Block 5,50.0,Active,false,0
+NORMAL-01,Normal,Block 1,7.4,Active,false,0
+NORMAL-02,Normal,Block 2,7.4,Active,false,0
+NORMAL-03,Normal,Block 3,7.4,Active,false,0
+NORMAL-04,Normal,Block 4,7.4,Active,false,0
+NORMAL-05,Normal,Block 5,7.4,Active,false,0

@@ -47,12 +47,11 @@ public class ResidentManager {
         saveDataToFile();
     }
 
-    // Secure password change requiring current password and strength check
+    // Secure password change requiring current password
     public boolean changePassword(Resident resident, String currentPassword, String newPassword) {
         if (resident == null) return false;
         if (currentPassword == null || newPassword == null) return false;
         if (!resident.authenticate(currentPassword)) return false;
-        if (!PasswordUtil.isStrong(newPassword)) return false;
         resident.setPassword(newPassword);
         saveDataToFile();
         return true;

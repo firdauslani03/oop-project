@@ -1,6 +1,5 @@
 // [Module: Smart Queue & Waitlist Management — Teoh Xin Yee, Member 4; constructor call updated by Iman, Member 1, after the User/Resident refactor]
 import java.io.*;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import Exception.*;
@@ -23,8 +22,7 @@ public class WaitlistManager {
 
     private void validateStationId(String stationId) throws InvalidQueueSelectionException {
         if (stationId == null || stationId.trim().isEmpty()) {
-            throw new InvalidQueueSelectionException(
-                    "stationId cannot be null or blank.");
+            throw new InvalidQueueSelectionException("stationId cannot be null or blank.");
         }
     }
 
@@ -32,8 +30,7 @@ public class WaitlistManager {
     //@throws InvalidQueueSelectionException  if stationId is null/blank
     //@throws ResidentAlreadyInQueueException if resident is already waiting at that station
     
-    public void joinQueue(Resident resident, String stationId)
-            throws InvalidQueueSelectionException, ResidentAlreadyInQueueException {
+    public void joinQueue(Resident resident, String stationId) throws InvalidQueueSelectionException, ResidentAlreadyInQueueException {
 
         if (resident == null) {
             throw new IllegalArgumentException("Resident cannot be null.");
@@ -123,8 +120,7 @@ public class WaitlistManager {
 
     // @throws InvalidQueueSelectionException if stationId is null/blank
     // @throws EmptyQueueException if no residents are waiting
-    public void promoteNext(String stationId)
-            throws InvalidQueueSelectionException, EmptyQueueException {
+    public void promoteNext(String stationId) throws InvalidQueueSelectionException, EmptyQueueException {
 
         validateStationId(stationId);
 
