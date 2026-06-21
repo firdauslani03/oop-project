@@ -2,7 +2,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
+<<<<<<< Updated upstream
 import Exception.*;
+=======
+
+>>>>>>> Stashed changes
 
 public class BookingMenu {
     
@@ -10,7 +14,15 @@ public class BookingMenu {
     private Scanner scanner;
     private Resident loggedInResident; 
 
+<<<<<<< HEAD
     public BookingMenu(BookingManager bookingManager, Resident loggedInResident) {
+=======
+<<<<<<< Updated upstream
+    public BookingMenuUI(BookingManager bookingManager, Resident loggedInResident) {
+=======
+    public BookingMenu(BookingManager bookingManager, Resident loggedInResident) {
+>>>>>>> Stashed changes
+>>>>>>> 23874fafd4e7b8a4ebcad886f559f49f917b91a6
         this.bookingManager = bookingManager;
         this.scanner = new Scanner(System.in);
         this.loggedInResident = loggedInResident;
@@ -50,7 +62,11 @@ public class BookingMenu {
 
 
     private void handleBookSlot() {
+<<<<<<< Updated upstream
         System.out.println("\n____BOOK CHARGING SLOT___");
+=======
+        System.out.println("\n___BOOK CHARGING SLOT__");
+>>>>>>> Stashed changes
         
         System.out.print("Enter a New Booking ID (exp. B001): ");
         String bookingId = scanner.nextLine().trim();
@@ -77,7 +93,11 @@ public class BookingMenu {
     }
 
     private void handleCancelBooking() {
+<<<<<<< Updated upstream
         System.out.println("\n___ CANCEL BOOKING___");
+=======
+        System.out.println("\n__ CANCEL BOOKING__");
+>>>>>>> Stashed changes
         System.out.print("Enter the Booking ID you want to cancel: ");
         String bookingId = scanner.nextLine().trim();
         
