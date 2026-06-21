@@ -1,0 +1,78 @@
+// [Module: Charging Station Management — Firdaus, Member 2. Iman, Member 1, left a placeholder stub; this is the full implementation.]
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class ChargingStation {
+    private String stationId;
+    private String location;
+    private String status; // "Active", "Inactive", "Maintenance"
+    private boolean underMaintenance;
+    private List<String> bookingIds; // Association: tracks bookings made at this station
+
+    public ChargingStation(String stationId, String location) {
+        this.stationId = stationId;
+        this.location = location;
+        this.status = "Active";
+        this.underMaintenance = false;
+        this.bookingIds = new ArrayList<>();
+    }
+
+    public String getStationId() {
+        return stationId;
+    }
+
+    public void setStationId(String stationId) {
+        this.stationId = stationId;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isUnderMaintenance() {
+        return underMaintenance;
+    }
+
+    public void setUnderMaintenance(boolean underMaintenance) {
+        this.underMaintenance = underMaintenance;
+        if (underMaintenance) {
+            this.status = "Maintenance";
+        }
+    }
+
+    public boolean isAvailable() {
+        return status.equals("Active") && !underMaintenance;
+    }
+
+    public void addBookingRecord(String bookingId) {
+        bookingIds.add(bookingId);
+    }
+
+    public List<String> getBookingIds() {
+        return bookingIds;
+    }
+
+    public int getTotalBookings() {
+        return bookingIds.size();
+    }
+
+    public abstract String getStationType();
+    public abstract String displayInfo();
+
+    @Override
+    public String toString() {
+        return stationId;
+    }
+}
