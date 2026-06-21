@@ -1,16 +1,16 @@
 public class Booking 
 {
     private String bookingId;
-    private String userId;
-    private String chargerId;
+    private Resident resident;
+    private ChargingStation station;
     private TimeSlot timeSlot;
     private String status; 
 
-    public Booking (String bookingId, String userId, String chargerId, TimeSlot timeSlot) 
+    public Booking (String bookingId, Resident resident, ChargingStation station, TimeSlot timeSlot) 
     {
         this.bookingId = bookingId;
-        this.userId = userId;
-        this.chargerId = chargerId;
+        this.resident = resident;
+        this.station = station;
         this.timeSlot = timeSlot;
         this.status = "Active"; 
     }
@@ -19,12 +19,12 @@ public class Booking
         this.bookingId = bookingId;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setBookingId(String bookingId) {
+        this.bookingId = bookingId;
     }
 
-    public void setChargerId(String chargerId) {
-        this.chargerId = chargerId;
+    public void setResident(Resident resident) {
+        this.resident = resident;
     }
 
     public void setTimeSlot(TimeSlot timeSlot) {
@@ -39,12 +39,12 @@ public class Booking
         return bookingId;
     }
 
-    public String getUserId() {
-        return userId;
+    public Resident getResident() {
+        return resident;
     }
 
-    public String getChargerId() {
-        return chargerId;
+    public ChargingStation getStation() {
+        return station;
     }
 
     public TimeSlot getTimeSlot() {
@@ -62,6 +62,6 @@ public class Booking
     @Override
     public String toString()
     {
-        return "Booking ID: " + bookingId + "\nUser: " + userId + "\nCharger: " + chargerId + "\nDate: " + timeSlot.getDate() + "\nTime: " + timeSlot.getStartTime() + " to " + timeSlot.getEndTime() + "\nStatus: " + status;
+        return "Booking ID: " + bookingId + "\nResident: " + resident.getName() + " (" + resident.getResidentId() + ")" + "\nCharger: " + station.getStationId() + "\nDate: " + timeSlot.getDate() + "\nTime: " + timeSlot.getStartTime() + " to " + timeSlot.getEndTime() + "\nStatus: " + status;
     }
 }
