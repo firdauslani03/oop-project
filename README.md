@@ -23,7 +23,7 @@ This project implements a small EV community management system demonstrating acc
 
 ## Files of interest
 
-- `RunResidentUI.java` — Interactive console UI (register, login, profile, vehicles)
+- `Main.java` — Main entry point that launches the full integrated system
 - `ResidentMenuUI.java` — Resident dashboard UI
 - `ResidentManager.java` — Account, profile, and vehicle management + persistence (`resident.txt`, `vehicle.txt`)
 - `WaitlistManager.java` — Queue operations and persistence (`queue.txt`, `queueHistory.txt`)
@@ -37,12 +37,12 @@ From the project folder (`d:\XAMPP\htdocs\oop-project`) compile and run:
 
 ```cmd
 javac *.java
-java RunResidentUI
+java Main
 ```
 
 Interactive options:
 - Register (1), Login (2), Exit (3)
-- After login: view/update profile, change password, add/remove/view vehicles, logout
+- After login: view/update profile, change password, add/remove/view vehicles, manage bookings, logout
 
 Non-interactive queue demo:
 

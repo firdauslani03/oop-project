@@ -10,7 +10,7 @@ public class BookingMenu {
     private Scanner scanner;
     private Resident loggedInResident; 
 
-    public BookingMenuUI(BookingManager bookingManager, Resident loggedInResident) {
+    public BookingMenu(BookingManager bookingManager, Resident loggedInResident) {
         this.bookingManager = bookingManager;
         this.scanner = new Scanner(System.in);
         this.loggedInResident = loggedInResident;

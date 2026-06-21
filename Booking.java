@@ -19,12 +19,12 @@ public class Booking
         this.bookingId = bookingId;
     }
 
-    public void setBookingId(String bookingId) {
-        this.bookingId = bookingId;
-    }
-
     public void setResident(Resident resident) {
         this.resident = resident;
+    }
+
+    public void setStation(ChargingStation station) {
+        this.station = station;
     }
 
     public void setTimeSlot(TimeSlot timeSlot) {

@@ -3,11 +3,17 @@ import Exception.*;
 
 public class ResidentMenuUI {
     private ResidentManager manager;
+    private BookingManager bookingManager;
     private Scanner scanner;
 
-    public ResidentMenuUI(ResidentManager manager) {
+    public ResidentMenuUI(ResidentManager manager, BookingManager bookingManager) {
         this.manager = manager;
+        this.bookingManager = bookingManager;
         this.scanner = new Scanner(System.in);
+    }
+
+    public ResidentMenuUI(ResidentManager manager) {
+        this(manager, null);
     }
 
     // Starts the main application loop for public access
@@ -82,18 +88,55 @@ public class ResidentMenuUI {
             System.out.println("\n=================================");
             System.out.println("      RESIDENT DASHBOARD         ");
             System.out.println("=================================");
-            System.out.println("1. View Profile Details");
-            System.out.println("2. Update Profile Contact info");
-            System.out.println("3. Change Password");
-            System.out.println("4. Add Registered Vehicle / EV");
-            System.out.println("5. Remove Registered Vehicle");
-            System.out.println("6. View Registered Vehicles");
-            System.out.println("7. Log Out");
+            System.out.println("1. Profile Management");
+            System.out.println("2. Vehicle Management");
+            System.out.println("3. Manage Bookings");
+            System.out.println("4. Log Out");
             System.out.print("Choose an option: ");
 
             String choice = scanner.nextLine().trim();
             switch (choice) {
-                case "1": // Feature 3: View Profile
+                case "1":
+                    showProfileMenu(resident);
+                    break;
+
+                case "2":
+                    showVehicleMenu(resident);
+                    break;
+
+                case "3": // Booking management
+                    if (bookingManager != null) {
+                        BookingMenu bookingMenu = new BookingMenu(bookingManager, resident);
+                        bookingMenu.start();
+                    } else {
+                        System.out.println("Booking features are not available.");
+                    }
+                    break;
+
+                case "4":
+                    System.out.println("Logging out of account...");
+                    return;
+
+                default:
+                    System.out.println("Invalid option. Choose an option between 1 and 4.");
+            }
+        }
+    }
+
+    private void showProfileMenu(Resident resident) {
+        while (true) {
+            System.out.println("\n=================================");
+            System.out.println("      PROFILE MANAGEMENT        ");
+            System.out.println("=================================");
+            System.out.println("1. View Profile Details");
+            System.out.println("2. Update Profile Contact info");
+            System.out.println("3. Change Password");
+            System.out.println("4. Back");
+            System.out.print("Choose an option: ");
+
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
                     System.out.println("\n--- Profile Information ---");
                     System.out.println("Resident ID  : " + resident.getResidentId());
                     System.out.println("Name         : " + resident.getName());
@@ -107,14 +150,14 @@ public class ResidentMenuUI {
                     }
                     break;
 
-                case "2": // Feature 4: Update Profile
+                case "2":
                     System.out.print("Enter your new Phone Number: ");
                     String newPhone = scanner.nextLine().trim();
                     manager.updateProfile(resident, newPhone, null);
                     System.out.println("Success! Profile details updated.");
                     break;
 
-                case "3": // Feature 5: Change Password
+                case "3":
                     System.out.print("Enter current Password: ");
                     String current = scanner.nextLine().trim();
                     System.out.print("Enter new secure Password: ");
@@ -124,7 +167,29 @@ public class ResidentMenuUI {
                     else System.out.println("Error: password change failed (wrong current password or weak new password).");
                     break;
 
-                case "4": // Feature 6 & 7: Add Vehicle & EV Profile Management
+                case "4":
+                    return;
+
+                default:
+                    System.out.println("Invalid option. Choose an option between 1 and 4.");
+            }
+        }
+    }
+
+    private void showVehicleMenu(Resident resident) {
+        while (true) {
+            System.out.println("\n=================================");
+            System.out.println("      VEHICLE MANAGEMENT       ");
+            System.out.println("=================================");
+            System.out.println("1. Add Registered Vehicle / EV");
+            System.out.println("2. Remove Registered Vehicle");
+            System.out.println("3. View Registered Vehicles");
+            System.out.println("4. Back");
+            System.out.print("Choose an option: ");
+
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
                     System.out.print("Enter EV / Vehicle Model: ");
                     String model = scanner.nextLine().trim();
                     System.out.print("Enter Battery Capacity (kWh): ");
@@ -137,7 +202,7 @@ public class ResidentMenuUI {
                     }
                     break;
 
-                case "5": // Feature 6: Remove Vehicle
+                case "2":
                     System.out.print("Enter exact Vehicle Model to remove: ");
                     String modelToRemove = scanner.nextLine().trim();
                     boolean removed = manager.removeVehicleFromResident(resident, modelToRemove);
@@ -148,7 +213,7 @@ public class ResidentMenuUI {
                     }
                     break;
 
-                case "6": // Feature 6: View Registered Vehicles
+                case "3":
                     System.out.println("\n--- Your Registered Vehicles ---");
                     if (resident.getVehicles().isEmpty()) {
                         System.out.println("(No vehicles registered yet)");
@@ -159,12 +224,11 @@ public class ResidentMenuUI {
                     }
                     break;
 
-                case "7":
-                    System.out.println("Logging out of account...");
+                case "4":
                     return;
 
                 default:
-                    System.out.println("Invalid option. Choose an option between 1 and 7.");
+                    System.out.println("Invalid option. Choose an option between 1 and 4.");
             }
         }
     }

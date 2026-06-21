@@ -1,1 +1,2 @@
+T01,Tesla 4,23.0
 demo1,Tesla Model 3,75.0
