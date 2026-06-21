@@ -10,12 +10,14 @@ public class WaitlistManager {
     private static final String HISTORY_FILE = "queueHistory.txt";
     private static final int ESTIMATED_MINUTES_PER_SLOT = 30;
 
-    private List<WaitlistEntry> queue = new ArrayList<>();
+    private ArrayList<WaitlistEntry> queue = new ArrayList<>();
     private QueueStrategy strategy;
     private QueueHistory history = new QueueHistory();
 
     public WaitlistManager(QueueStrategy strategy) {
         this.strategy = strategy;
+        loadQueueFromFile();
+        loadHistoryFromFile();
     }
 
     private void validateStationId(String stationId) throws InvalidQueueSelectionException {
@@ -32,6 +34,12 @@ public class WaitlistManager {
     public void joinQueue(Resident resident, String stationId)
             throws InvalidQueueSelectionException, ResidentAlreadyInQueueException {
 
+        if (resident == null) {
+            throw new IllegalArgumentException("Resident cannot be null.");
+        }
+        if (resident.getResidentId() == null || resident.getResidentId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Resident ID cannot be null or blank.");
+        }
         validateStationId(stationId);
 
         // Check for duplicate
@@ -53,17 +61,26 @@ public class WaitlistManager {
     public boolean leaveQueue(Resident resident, String stationId)
             throws InvalidQueueSelectionException {
 
+        if (resident == null) {
+            throw new IllegalArgumentException("Resident cannot be null.");
+        }
         validateStationId(stationId);
 
+        WaitlistEntry toRemove = null;
         for (WaitlistEntry e : queue) {
             if (e.getResident().getResidentId().equals(resident.getResidentId())
                     && e.getStationId().equals(stationId)) {
-                queue.remove(e);
-                System.out.println("[LEFT]    " + resident.getName()
-                        + " left the queue for Station " + stationId);
-                saveQueueToFile();
-                return true;
+                toRemove = e;
+                break;
             }
+        }
+
+        if (toRemove != null) {
+            queue.remove(toRemove);
+            System.out.println("[LEFT]    " + resident.getName()
+                    + " left the queue for Station " + stationId);
+            saveQueueToFile();
+            return true;
         }
 
         System.out.println("[ERROR]   " + resident.getName()
@@ -75,9 +92,12 @@ public class WaitlistManager {
     public void viewQueueStatus(Resident resident, String stationId)
             throws InvalidQueueSelectionException {
 
+        if (resident == null) {
+            throw new IllegalArgumentException("Resident cannot be null.");
+        }
         validateStationId(stationId);
 
-        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
+        ArrayList<WaitlistEntry> ordered = getOrderedQueue(stationId);
         int position = -1;
         for (int i = 0; i < ordered.size(); i++) {
             if (ordered.get(i).getResident().getResidentId()
@@ -127,11 +147,14 @@ public class WaitlistManager {
     }
 
     public void viewQueueHistory(Resident resident) {
+        if (resident == null) {
+            throw new IllegalArgumentException("Resident cannot be null.");
+        }
         String id = resident.getResidentId();
         System.out.println("\n--- Queue History: " + resident.getName() + " ---");
         System.out.println("Times joined queue    : " + history.getJoinCount(id));
 
-        List<QueueRecord> records = history.getRecords(id);
+        ArrayList<QueueRecord> records = history.getRecords(id);
         if (records.isEmpty()) {
             System.out.println("Completed records     : none yet");
         } else {
@@ -147,7 +170,7 @@ public class WaitlistManager {
     public void printCurrentQueue(String stationId) {
         System.out.println("\n--- Current Queue: Station " + stationId
                 + " | Strategy: " + strategy.getStrategyName() + " ---");
-        List<WaitlistEntry> ordered = getOrderedQueue(stationId);
+        ArrayList<WaitlistEntry> ordered = getOrderedQueue(stationId);
         if (ordered.isEmpty()) {
             System.out.println("(empty)");
             return;
@@ -158,12 +181,12 @@ public class WaitlistManager {
         }
     }
 
-    private List<WaitlistEntry> getOrderedQueue(String stationId) {
-        List<WaitlistEntry> remaining = new ArrayList<>();
+    private ArrayList<WaitlistEntry> getOrderedQueue(String stationId) {
+        ArrayList<WaitlistEntry> remaining = new ArrayList<>();
         for (WaitlistEntry e : queue) {
             if (e.getStationId().equals(stationId)) remaining.add(e);
         }
-        List<WaitlistEntry> ordered = new ArrayList<>();
+        ArrayList<WaitlistEntry> ordered = new ArrayList<>();
         while (!remaining.isEmpty()) {
             WaitlistEntry next = strategy.getNext(remaining, stationId);
             if (next == null) break;
@@ -197,6 +220,67 @@ public class WaitlistManager {
             System.out.println("[FILE]    queueHistory.txt updated.");
         } catch (IOException ex) {
             System.err.println("[FILE ERROR] Could not write queueHistory.txt: " + ex.getMessage());
+        }
+    }
+
+    private void loadQueueFromFile() {
+        File file = new File(QUEUE_FILE);
+        if (!file.exists()) return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                String[] parts = line.split(",");
+                if (parts.length == 4) {
+                    try {
+                        String residentId = parts[0];
+                        String name = parts[1];
+                        String stationId = parts[2];
+                        LocalDateTime joinTime = LocalDateTime.parse(parts[3]);
+
+                        Resident resident = new Resident(residentId, name);
+                        WaitlistEntry entry = new WaitlistEntry(resident, stationId, joinTime);
+                        queue.add(entry);
+                        history.recordJoin(residentId);
+                    } catch (Exception ex) {
+                        System.err.println("[FILE ERROR] Skipping corrupt queue line: " + line + " - " + ex.getMessage());
+                    }
+                }
+            }
+            System.out.println("[FILE]    queue.txt loaded (" + queue.size() + " entries).");
+        } catch (IOException ex) {
+            System.err.println("[FILE ERROR] Could not read queue.txt: " + ex.getMessage());
+        }
+    }
+
+    private void loadHistoryFromFile() {
+        File file = new File(HISTORY_FILE);
+        if (!file.exists()) return;
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                String[] parts = line.split(",");
+                if (parts.length == 5) {
+                    try {
+                        String residentId = parts[0];
+                        String stationId = parts[2];
+                        LocalDateTime joinTime = LocalDateTime.parse(parts[3]);
+                        LocalDateTime promotedTime = LocalDateTime.parse(parts[4]);
+
+                        QueueRecord record = new QueueRecord(stationId, joinTime, promotedTime);
+                        history.recordJoin(residentId);
+                        history.recordPromotion(residentId, record);
+                        count++;
+                    } catch (Exception ex) {
+                        System.err.println("[FILE ERROR] Skipping corrupt history line: " + line + " - " + ex.getMessage());
+                    }
+                }
+            }
+            System.out.println("[FILE]    queueHistory.txt loaded (" + count + " records).");
+        } catch (IOException ex) {
+            System.err.println("[FILE ERROR] Could not read queueHistory.txt: " + ex.getMessage());
         }
     }
 }

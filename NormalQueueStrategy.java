@@ -1,14 +1,18 @@
+<<<<<<< HEAD
 import java.util.List;
 
 interface QueueStrategy {
     WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId);
     String getStrategyName();
 }
+=======
+import java.util.ArrayList;
+>>>>>>> origin/xinyee
 
 public class NormalQueueStrategy implements QueueStrategy {
 
     @Override
-    public WaitlistEntry getNext(List<WaitlistEntry> queue, String stationId) {
+    public WaitlistEntry getNext(ArrayList<WaitlistEntry> queue, String stationId) {
         WaitlistEntry earliest = null;
         for (WaitlistEntry e : queue) {
             if (!e.getStationId().equals(stationId)) continue;
