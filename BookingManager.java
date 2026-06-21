@@ -1,23 +1,47 @@
 // [Module: Booking & Reservation Management — Hong Jia Bao, Member 3; extended by Firdaus, Member 2, to integrate with StationManager]
+import Exception.*;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import Exception.*;
-import java.io.*;
 
 public class BookingManager{
 
     private ArrayList<Booking> bookingList;
     private WaitlistManager waitlistManager;
     private StationManager stationManager;
+    private ResidentManager residentManager;
 
     private static final String BOOKING_FILE = "booking.txt";
 
-    public BookingManager(WaitlistManager waitlistManager, StationManager stationManager) {
+    public BookingManager(WaitlistManager waitlistManager, ResidentManager residentManager, StationManager stationManager) {
         this.bookingList = new ArrayList<>();
         this.waitlistManager = waitlistManager;
+        this.residentManager = residentManager;
         this.stationManager = stationManager;
         loadBookingsFromFile();
+    }
+
+    public String generateNextBookingId() {
+        if (bookingList.isEmpty()) {
+            return "B001"; 
+        }
+
+        int maxId = 0;
+        for (Booking b : bookingList) {
+            String currentId = b.getBookingId();
+            if (currentId.startsWith("B")) {
+                try {
+                    int num = Integer.parseInt(currentId.substring(1));
+                    if (num > maxId) {
+                        maxId = num;
+                    }
+                } catch (NumberFormatException e) {
+                  System.out.println("Invalid Booking ID");
+                }
+            }
+        }
+        return String.format("B%03d", maxId + 1); 
     }
 
     public void checkConflict(ChargingStation station, LocalDate newDate, LocalTime newStart, LocalTime newEnd) throws BookingConflictException 
@@ -27,14 +51,10 @@ public class BookingManager{
         }
 
         for (Booking existingBooking : bookingList) {
-            
-    
             if (existingBooking.getStatus().equals("Active") && existingBooking.getStation().getStationId().equals(station.getStationId())) {
                 TimeSlot existingSlot = existingBooking.getTimeSlot();
 
-        
                 if (existingSlot.getDate().equals(newDate)) {
-
                     LocalTime existingStart = existingSlot.getStartTime();
                     LocalTime existingEnd = existingSlot.getEndTime();
                     if (newStart.isBefore(existingEnd) && newEnd.isAfter(existingStart)) {
@@ -101,6 +121,28 @@ public class BookingManager{
         }
     }
 
+    public void viewMyBookings(Resident loggedInResident) {
+        System.out.println("\nMy Booking History: ");
+        boolean foundMyBooking = false; 
+        for (Booking b : bookingList) {
+            
+            String ownerId = b.getResident().getResidentId();
+            
+            String myId = loggedInResident.getResidentId();
+
+            if (ownerId.equalsIgnoreCase(myId)) {
+                System.out.println(b.toString());
+                System.out.println("Duration: " + b.getDuration() + " minutes\n");
+                
+                foundMyBooking = true; 
+            }
+        }
+
+        if (foundMyBooking == false) {
+            System.out.println("You have no booking history yet.");
+        }
+    }
+
     public void saveBookingsToFile() {
         try (PrintWriter writer = new PrintWriter(new FileWriter(BOOKING_FILE))) {
             for (Booking b : bookingList) {
@@ -133,13 +175,16 @@ public class BookingManager{
                         LocalTime endTime = LocalTime.parse(data[5]);
                         String status = data[6];
 
-                        Resident loadedResident = new Resident(residentId, "Loaded User", "", "", "");
-                        ChargingStation loadedStation = (stationManager != null)
-                                ? stationManager.findStation(stationId)
-                                : null;
+                        Resident loadedResident = residentManager.getResidentById(residentId);
+                        
+                        if (loadedResident == null) {
+                            loadedResident = new Resident(residentId, "Unknown/Deleted User", "", "", "");
+                        }
+
+                        ChargingStation loadedStation = stationManager.findStation(stationId);
+                        
                         if (loadedStation == null) {
-                            System.err.println("Skipping booking " + bookingId
-                                    + ": station '" + stationId + "' not found.");
+                            System.err.println("Skipping booking " + bookingId + ": station '" + stationId + "' not found.");
                             continue;
                         }
 

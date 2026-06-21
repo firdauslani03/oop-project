@@ -1,7 +1,7 @@
 // [Module: Resident & Vehicle Management — Iman, Member 1]
+import Exception.*;
 import java.io.*;
 import java.util.*;
-import Exception.*;
 
 public class ResidentManager {
     private Map<String, Resident> residentMap = new HashMap<>();
@@ -127,5 +127,11 @@ public class ResidentManager {
                 }
             } catch (Exception ignored) {}
         }
+    }
+    
+    //Allows other managers (like BookingManager) to retrieve the full Resident object using only their ID. 
+    public Resident getResidentById(String residentId) {
+        if (residentId == null) return null;
+        return residentMap.get(residentId.toLowerCase());
     }
 }

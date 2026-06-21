@@ -1,8 +1,8 @@
 // [Shared entry point: initial scaffold predates task division; rebuilt by Iman (Member 1) to wire Resident/Booking/Queue modules; Admin Login and Station menu wiring added by Firdaus (Member 2)]
-import java.util.Scanner;
 import Exception.*;
+import java.util.Scanner;
 
-public class Main {
+public class BookingChargerApp {
     public static void main(String[] args) {
 
         final String ADMIN_USERNAME = "admin";
@@ -11,7 +11,7 @@ public class Main {
         ResidentManager manager = new ResidentManager();
         StationManager stationManager = new StationManager();       
         WaitlistManager waitlistManager = new WaitlistManager(new NormalQueueStrategy());
-        BookingManager bookingManager = new BookingManager(waitlistManager, stationManager); 
+        BookingManager bookingManager = new BookingManager(waitlistManager,manager, stationManager); 
  
         Scanner scanner = new Scanner(System.in);
 
