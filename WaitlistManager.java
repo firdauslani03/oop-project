@@ -20,7 +20,7 @@ public class WaitlistManager {
         loadHistoryFromFile();
     }
 
-    private void validateStationId(String stationId) throws InvalidQueueSelectionException {
+    public void validateStationId(String stationId) throws InvalidQueueSelectionException {
         if (stationId == null || stationId.trim().isEmpty()) {
             throw new InvalidQueueSelectionException("stationId cannot be null or blank.");
         }
@@ -178,7 +178,7 @@ public class WaitlistManager {
         }
     }
 
-    private ArrayList<WaitlistEntry> getOrderedQueue(String stationId) {
+    public ArrayList<WaitlistEntry> getOrderedQueue(String stationId) {
         ArrayList<WaitlistEntry> remaining = new ArrayList<>();
         for (WaitlistEntry e : queue) {
             if (e.getStationId().equals(stationId)) remaining.add(e);
@@ -193,7 +193,7 @@ public class WaitlistManager {
         return ordered;
     }
 
-    private void saveQueueToFile() {
+    public void saveQueueToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(QUEUE_FILE))) {
             for (WaitlistEntry e : queue) {
                 writer.write(e.getResident().getResidentId() + ","
@@ -208,7 +208,7 @@ public class WaitlistManager {
         }
     }
 
-    private void appendHistoryToFile(Resident resident, QueueRecord record) {
+    public void appendHistoryToFile(Resident resident, QueueRecord record) {
         try (BufferedWriter writer = new BufferedWriter(
                 new FileWriter(HISTORY_FILE, true))) {   // true = append mode
             writer.write(record.toCsvLine(
@@ -220,7 +220,7 @@ public class WaitlistManager {
         }
     }
 
-    private void loadQueueFromFile() {
+    public void loadQueueFromFile() {
         File file = new File(QUEUE_FILE);
         if (!file.exists()) return;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -251,7 +251,7 @@ public class WaitlistManager {
         }
     }
 
-    private void loadHistoryFromFile() {
+    public void loadHistoryFromFile() {
         File file = new File(HISTORY_FILE);
         if (!file.exists()) return;
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {

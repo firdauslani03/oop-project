@@ -1,6 +1,5 @@
 // [Module: Resident & Vehicle Management — Iman, Member 1]
 import java.util.Scanner;
-import Exception.*;
 
 public class VehicleMenu {
     private ResidentManager manager;
@@ -43,7 +42,7 @@ public class VehicleMenu {
         }
     }
 
-    private void addVehicle() {
+    public void addVehicle() {
         System.out.print("Enter EV / Vehicle Model: ");
         String model = scanner.nextLine().trim();
         System.out.print("Enter Battery Capacity (kWh): ");
@@ -56,7 +55,7 @@ public class VehicleMenu {
         }
     }
 
-    private void removeVehicle() {
+    public void removeVehicle() {
         System.out.print("Enter exact Vehicle Model to remove: ");
         String modelToRemove = scanner.nextLine().trim();
         boolean removed = manager.removeVehicleFromResident(resident, modelToRemove);
@@ -67,7 +66,7 @@ public class VehicleMenu {
         }
     }
 
-    private void viewVehicles() {
+    public void viewVehicles() {
         System.out.println("\n--- Your Registered Vehicles ---");
         if (resident.getVehicles().isEmpty()) {
             System.out.println("(No vehicles registered yet)");

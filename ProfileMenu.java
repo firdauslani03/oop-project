@@ -42,7 +42,7 @@ public class ProfileMenu {
         }
     }
 
-    private void showProfileDetails() {
+    public void showProfileDetails() {
         System.out.println("\n--- Profile Information ---");
         System.out.println("Resident ID  : " + resident.getResidentId());
         System.out.println("Name         : " + resident.getName());
@@ -56,14 +56,14 @@ public class ProfileMenu {
         }
     }
 
-    private void updateContactInfo() {
+    public void updateContactInfo() {
         System.out.print("Enter your new Phone Number: ");
         String newPhone = scanner.nextLine().trim();
         manager.updateProfile(resident, newPhone, null);
         System.out.println("Success! Profile details updated.");
     }
 
-    private void changePassword() {
+    public void changePassword() {
         System.out.print("Enter current Password: ");
         String current = scanner.nextLine().trim();
         System.out.print("Enter new secure Password: ");
@@ -72,7 +72,7 @@ public class ProfileMenu {
         if (changed) {
             System.out.println("Success! Password updated securely.");
         } else {
-            System.out.println("Error: password change failed (wrong current password or weak new password).");
+            System.out.println("Error: password change failed (wrong current password).");
         }
     }
 }

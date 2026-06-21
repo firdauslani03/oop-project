@@ -47,7 +47,7 @@ public class QueueMenu {
         }
     }
 
-    private void joinQueue() {
+    public void joinQueue() {
         System.out.print("Enter desired Station ID to join queue: ");
         String stationId = scanner.nextLine().trim();
         try {
@@ -57,7 +57,7 @@ public class QueueMenu {
         }
     }
 
-    private void leaveQueue() {
+    public void leaveQueue() {
         System.out.print("Enter Station ID to leave queue: ");
         String stationId = scanner.nextLine().trim();
         try {
@@ -69,7 +69,7 @@ public class QueueMenu {
         }
     }
 
-    private void viewQueueStatus() {
+    public void viewQueueStatus() {
         System.out.print("Enter Station ID to view queue status: ");
         String stationId = scanner.nextLine().trim();
         try {

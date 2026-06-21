@@ -52,7 +52,7 @@ public class ResidentMenuUI {
     }
 
     // Handles Feature 1: Register Account
-    private void handleRegistration() {
+    public void handleRegistration() {
         System.out.println("\n--- ACCOUNT REGISTRATION ---");
         System.out.print("Enter unique Resident ID: ");
         String id = scanner.nextLine().trim();
@@ -73,7 +73,7 @@ public class ResidentMenuUI {
     }
 
     // Handles Feature 2: Login System
-    private void handleLogin() {
+    public void handleLogin() {
         System.out.println("\n--- SYSTEM LOGIN ---");
         System.out.print("Enter Resident ID: ");
         String id = scanner.nextLine().trim();
@@ -90,7 +90,7 @@ public class ResidentMenuUI {
     }
 
     // Authorized Sub-Menu once logged in successfully
-    private void showResidentMenu(Resident resident) {
+    public void showResidentMenu(Resident resident) {
         while (true) {
             System.out.println("\n=================================");
             System.out.println("      RESIDENT DASHBOARD         ");
@@ -130,7 +130,7 @@ public class ResidentMenuUI {
         }
     }
 
-    private void showProfileMenu(Resident resident) {
+    public void showProfileMenu(Resident resident) {
         while (true) {
             System.out.println("\n=================================");
             System.out.println("      PROFILE MANAGEMENT        ");
@@ -183,7 +183,7 @@ public class ResidentMenuUI {
         }
     }
 
-    private void showVehicleMenu(Resident resident) {
+    public void showVehicleMenu(Resident resident) {
         while (true) {
             System.out.println("\n=================================");
             System.out.println("      VEHICLE MANAGEMENT       ");

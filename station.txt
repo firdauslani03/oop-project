@@ -1,5 +1,5 @@
-FAST-01,Fast,Block 1,50.0,Active,false,0
-FAST-02,Fast,Block 2,50.0,Active,false,0
+FAST-01,Fast,Block 1,50.0,Maintenance,true,3
+FAST-02,Fast,Block 2,50.0,Active,false,6
 FAST-03,Fast,Block 3,50.0,Active,false,0
 FAST-04,Fast,Block 4,50.0,Active,false,0
 FAST-05,Fast,Block 5,50.0,Active,false,0

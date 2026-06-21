@@ -75,7 +75,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleAddStation() {
+    public void handleAddStation() {
         System.out.println("\n___ ADD CHARGING STATION ___");
         System.out.print("Enter Station ID (exp. FAST-06): ");
         String stationId = scanner.nextLine().trim();
@@ -102,7 +102,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleRemoveStation() {
+    public void handleRemoveStation() {
         System.out.println("\n___ REMOVE CHARGING STATION ___");
         System.out.print("Enter Station ID to remove: ");
         String stationId = scanner.nextLine().trim();
@@ -114,7 +114,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleUpdateStatus() {
+    public void handleUpdateStatus() {
         System.out.println("\n___ UPDATE STATION STATUS ___");
         System.out.print("Enter Station ID: ");
         String stationId = scanner.nextLine().trim();
@@ -128,7 +128,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleMarkMaintenance() {
+    public void handleMarkMaintenance() {
         System.out.println("\n___ MARK STATION UNDER MAINTENANCE ___");
         System.out.print("Enter Station ID: ");
         String stationId = scanner.nextLine().trim();
@@ -142,7 +142,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleResolveMaintenance() {
+    public void handleResolveMaintenance() {
         System.out.println("\n___ RESOLVE MAINTENANCE ___");
         System.out.print("Enter Station ID: ");
         String stationId = scanner.nextLine().trim();
@@ -154,7 +154,7 @@ public class AdminMenu {
         }
     }
 
-    private void handleCompleteCharging() {
+    public void handleCompleteCharging() {
         System.out.println("\n___ MANUALLY COMPLETE CHARGING (DEMO) ___");
         System.out.print("Enter Booking ID to mark as completed: ");
         String bookingId = scanner.nextLine().trim();

@@ -76,7 +76,7 @@ public class ResidentManager {
     }
 
     // --- File I/O Implementations ---
-    private void saveDataToFile() {
+    public void saveDataToFile() {
         try (PrintWriter writer = new PrintWriter(new FileWriter(RESIDENT_FILE))) {
             for (Resident r : residentMap.values()) {
                 writer.println(r.getResidentId() + "," + r.getName() + "," + r.getPassword() + "," + r.getIcNumber() + "," + r.getPhoneNumber());
@@ -96,7 +96,7 @@ public class ResidentManager {
         }
     }
 
-    private void loadDataFromFile() {
+    public void loadDataFromFile() {
         File resFile = new File(RESIDENT_FILE);
         File vehFile = new File(VEHICLE_FILE);
 

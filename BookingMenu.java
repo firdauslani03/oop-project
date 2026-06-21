@@ -49,7 +49,7 @@ public class BookingMenu {
         }
     }
 
-    private void handleBookSlot() {
+    public void handleBookSlot() {
         System.out.println("\n___BOOK CHARGING SLOT___");
         System.out.println("\nList of Charger :");
         stationManager.viewStationAvailability();
@@ -90,7 +90,7 @@ public class BookingMenu {
         }
     }
 
-    private void handleCancelBooking() {
+    public void handleCancelBooking() {
         System.out.println("\n___ CANCEL BOOKING___");
         System.out.print("\nEnter the Booking ID you want to cancel: ");
         String bookingId = scanner.nextLine();
