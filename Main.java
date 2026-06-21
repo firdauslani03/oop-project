@@ -96,10 +96,12 @@ public class Main {
             String choice = scanner.nextLine().trim();
             switch (choice) {
                 case "1":
-                    showProfileMenu(resident);
+                    ProfileMenu profileMenu = new ProfileMenu(manager, resident, scanner);
+                    profileMenu.start();
                     break;
                 case "2":
-                    showVehicleMenu(resident);
+                    VehicleMenu vehicleMenu = new VehicleMenu(manager, resident, scanner);
+                    vehicleMenu.start();
                     break;
                 case "3":
                     if (bookingManager != null) {
@@ -111,111 +113,6 @@ public class Main {
                     break;
                 case "4":
                     System.out.println("Logging out of account...");
-                    return;
-                default:
-                    System.out.println("Invalid option. Choose an option between 1 and 4.");
-            }
-        }
-    }
-
-    private void showProfileMenu(Resident resident) {
-        while (true) {
-            System.out.println("\n=================================");
-            System.out.println("      PROFILE MANAGEMENT        ");
-            System.out.println("=================================");
-            System.out.println("1. View Profile Details");
-            System.out.println("2. Update Profile Contact info");
-            System.out.println("3. Change Password");
-            System.out.println("4. Back");
-            System.out.print("Choose an option: ");
-
-            String choice = scanner.nextLine().trim();
-            switch (choice) {
-                case "1":
-                    System.out.println("\n--- Profile Information ---");
-                    System.out.println("Resident ID  : " + resident.getResidentId());
-                    System.out.println("Name         : " + resident.getName());
-                    System.out.println("IC Number    : " + resident.getIcNumber());
-                    System.out.println("Phone Number : " + resident.getPhoneNumber());
-                    System.out.println("Registered Vehicles: " + resident.getVehicles().size());
-                    if (!resident.getVehicles().isEmpty()) {
-                        for (Vehicle v : resident.getVehicles()) {
-                            System.out.println("  - " + v);
-                        }
-                    }
-                    break;
-                case "2":
-                    System.out.print("Enter your new Phone Number: ");
-                    String newPhone = scanner.nextLine().trim();
-                    manager.updateProfile(resident, newPhone, null);
-                    System.out.println("Success! Profile details updated.");
-                    break;
-                case "3":
-                    System.out.print("Enter current Password: ");
-                    String current = scanner.nextLine().trim();
-                    System.out.print("Enter new secure Password: ");
-                    String newPass = scanner.nextLine().trim();
-                    boolean changed = manager.changePassword(resident, current, newPass);
-                    if (changed) {
-                        System.out.println("Success! Password updated securely.");
-                    } else {
-                        System.out.println("Error: password change failed (wrong current password or weak new password).");
-                    }
-                    break;
-                case "4":
-                    return;
-                default:
-                    System.out.println("Invalid option. Choose an option between 1 and 4.");
-            }
-        }
-    }
-
-    private void showVehicleMenu(Resident resident) {
-        while (true) {
-            System.out.println("\n=================================");
-            System.out.println("      VEHICLE MANAGEMENT       ");
-            System.out.println("=================================");
-            System.out.println("1. Add Registered Vehicle / EV");
-            System.out.println("2. Remove Registered Vehicle");
-            System.out.println("3. View Registered Vehicles");
-            System.out.println("4. Back");
-            System.out.print("Choose an option: ");
-
-            String choice = scanner.nextLine().trim();
-            switch (choice) {
-                case "1":
-                    System.out.print("Enter EV / Vehicle Model: ");
-                    String model = scanner.nextLine().trim();
-                    System.out.print("Enter Battery Capacity (kWh): ");
-                    try {
-                        double capacity = Double.parseDouble(scanner.nextLine().trim());
-                        manager.addVehicleToResident(resident, model, capacity);
-                        System.out.println("Success! Vehicle added to profile.");
-                    } catch (NumberFormatException e) {
-                        System.out.println("Error: Invalid capacity format. Must be numeric numbers.");
-                    }
-                    break;
-                case "2":
-                    System.out.print("Enter exact Vehicle Model to remove: ");
-                    String modelToRemove = scanner.nextLine().trim();
-                    boolean removed = manager.removeVehicleFromResident(resident, modelToRemove);
-                    if (removed) {
-                        System.out.println("Success! Vehicle removed cleanly.");
-                    } else {
-                        System.out.println("Error: Vehicle model not found on your profile.");
-                    }
-                    break;
-                case "3":
-                    System.out.println("\n--- Your Registered Vehicles ---");
-                    if (resident.getVehicles().isEmpty()) {
-                        System.out.println("(No vehicles registered yet)");
-                    } else {
-                        for (int i = 0; i < resident.getVehicles().size(); i++) {
-                            System.out.println((i + 1) + ". " + resident.getVehicles().get(i));
-                        }
-                    }
-                    break;
-                case "4":
                     return;
                 default:
                     System.out.println("Invalid option. Choose an option between 1 and 4.");
